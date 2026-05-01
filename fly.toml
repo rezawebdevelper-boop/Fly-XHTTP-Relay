@@ -1,0 +1,33 @@
+# fly.toml — fly-xhttp relay
+# docs: https://fly.io/docs/reference/configuration/
+
+app = "fly-xhttp-relay"          # ← نام app خودت رو اینجا بذار (باید unique باشه)
+primary_region = "ams"            # ← ریجن مناسب: ams / fra / lhr / sin / syd / ...
+
+[build]
+  dockerfile = "Dockerfile"
+
+# ─── Scale-to-zero (serverless behaviour) ────────────────────────────────────
+[http_service]
+  internal_port       = 8080
+  force_https         = true
+  auto_stop_machines  = "stop"   # ماشین وقتی idle بود خاموش میشه
+  auto_start_machines = true     # وقتی request میاد روشن میشه
+  min_machines_running = 0       # ← کلید serverless: تا وقتی request نیاد هیچ ماشینی نمیچرخه
+  processes           = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "5s"
+    interval     = "15s"
+    method       = "GET"
+    timeout      = "2s"
+    path         = "/"
+
+# ─── Machine size ─────────────────────────────────────────────────────────────
+[[vm]]
+  size   = "shared-cpu-1x"       # ارزان‌ترین گزینه (Free tier شامل این میشه)
+  memory = "256mb"
+
+# ─── Environment variables ────────────────────────────────────────────────────
+# TARGET_URL رو با fly secrets set بذار، اینجا نذار!
+# fly secrets set TARGET_URL=https://your-xray-server.example.com:443
